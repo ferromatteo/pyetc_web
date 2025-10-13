@@ -1,0 +1,1267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WST ETC</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            display: flex;
+            gap: 20px;
+            max-width: 1800px;
+            margin: 0 auto;
+            height: calc(100vh - 40px);
+        }
+        
+        .left-panel {
+            flex: 1;
+            max-width: 50%;
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            overflow-y: auto;
+            max-height: 100%;
+        }
+        
+        .right-panel {
+            flex: 1;
+            max-width: 50%;
+        }
+        
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #e0e0e0;
+            flex-wrap: wrap;
+        }
+        
+        .tab {
+            padding: 12px 20px;
+            background: #f5f5f5;
+            border: none;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            color: #666;
+            border-radius: 8px 8px 0 0;
+            transition: all 0.3s;
+        }
+        
+        .tab:hover {
+            background: #e8e8e8;
+        }
+        
+        .tab.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .section {
+            margin-bottom: 25px;
+        }
+        
+        .section-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 12px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #667eea;
+        }
+        
+        .config-group {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        
+        .config-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        
+        .config-name {
+            font-weight: 600;
+            font-size: 15px;
+            color: #444;
+        }
+        
+        .checkbox-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .checkbox-item input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+        
+        .checkbox-item label {
+            cursor: pointer;
+            font-size: 14px;
+            padding: 6px 12px;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+        
+        /* IFS colors */
+        .ifs-blue-label { background: #bbdefb; color: #1565c0; }
+        .ifs-red-label { background: #ffcdd2; color: #c62828; }
+
+        /* MOSHR colors */
+        .moshr-U-label { background: #e1bee7; color: #6a1b9a; }
+        .moshr-B-label { background: #b3e5fc; color: #01579b; }
+        .moshr-V-label { background: #c8e6c9; color: #2e7d32; }
+        .moshr-I-label { background: #ffccbc; color: #d84315; }
+        
+        /* MOSLR colors */
+        .moslr-blue-label { background: #90caf9; color: #0d47a1; }
+        .moslr-orange-label { background: #ffcc80; color: #e65100; }
+        .moslr-red-label { background: #ef9a9a; color: #b71c1c; }
+        
+        .checkbox-item input[type="checkbox"]:checked + label {
+            font-weight: 600;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        
+        .btn-select {
+            background: #4caf50;
+            color: white;
+        }
+        
+        .btn-deselect {
+            background: #f44336;
+            color: white;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-label {
+            display: block;
+            font-size: 13px;
+            font-weight: 600;
+            color: #555;
+            margin-bottom: 6px;
+        }
+        
+        .form-input, .form-select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        
+        .form-input:focus, .form-select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .form-input.error, .form-select.error {
+            border-color: #f44336;
+            background: #ffebee;
+        }
+        
+        .error-message {
+            color: #f44336;
+            font-size: 12px;
+            margin-top: 4px;
+            font-weight: 600;
+        }
+        
+        .horizontal-group {
+            display: flex;
+            gap: 15px;
+        }
+        
+        .vertical-section {
+            flex: 1;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+        
+        .compute-btn {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 20px;
+        }
+        
+        .compute-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        .results-panel {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            height: 100%;
+            overflow-y: auto;
+        }
+        
+        .results-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #667eea;
+        }
+        
+        .results-content {
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            white-space: pre-wrap;
+            color: #444;
+            line-height: 1.6;
+        }
+        
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- LEFT PANEL: Configuration Form -->
+        <div class="left-panel">
+            <form method="POST" id="etcForm">
+                <!-- TABS -->
+                <div class="tabs">
+                    <button type="button" class="tab active" onclick="switchTab(event, 'configurations')">CONFIGURATIONS</button>
+                    <button type="button" class="tab" onclick="switchTab(event, 'target')">TARGET</button>
+                    <button type="button" class="tab" onclick="switchTab(event, 'sky')">SKY CONDITIONS</button>
+                    <button type="button" class="tab" onclick="switchTab(event, 'compute')">COMPUTE</button>
+                </div>
+                
+                <!-- TAB 1: CONFIGURATIONS -->
+                <div id="configurations" class="tab-content active">
+                    <!-- IFS -->
+                    <div class="config-group">
+                        <div class="config-header">
+                            <span class="config-name">IFS</span>
+                        </div>
+                        <div class="checkbox-group">
+                            <div class="checkbox-item">
+                                <input type="checkbox" name="config" value="ifs-blue" id="ifs-blue" onchange="updateConfigOptions()" {% if 'ifs-blue' in request.form.getlist('config') %}checked{% endif %}>
+                                <label for="ifs-blue" class="ifs-blue-label">Blue</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" name="config" value="ifs-red" id="ifs-red" onchange="updateConfigOptions()" {% if 'ifs-red' in request.form.getlist('config') %}checked{% endif %}>
+                                <label for="ifs-red" class="ifs-red-label">Red</label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- MOS High Resolution -->
+                    <div class="config-group">
+                        <div class="config-header">
+                            <span class="config-name">MOS High Resolution</span>
+                        </div>
+                        <div class="checkbox-group">
+                            <div class="checkbox-item">
+                                <input type="checkbox" name="config" value="moshr-U" id="moshr-U" onchange="updateConfigOptions()" {% if 'moshr-U' in request.form.getlist('config') %}checked{% endif %}>
+                                <label for="moshr-U" class="moshr-U-label">U</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" name="config" value="moshr-B" id="moshr-B" onchange="updateConfigOptions()" {% if 'moshr-B' in request.form.getlist('config') %}checked{% endif %}>
+                                <label for="moshr-B" class="moshr-B-label">B</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" name="config" value="moshr-V" id="moshr-V" onchange="updateConfigOptions()" {% if 'moshr-V' in request.form.getlist('config') %}checked{% endif %}>
+                                <label for="moshr-V" class="moshr-V-label">V</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" name="config" value="moshr-I" id="moshr-I" onchange="updateConfigOptions()" {% if 'moshr-I' in request.form.getlist('config') %}checked{% endif %}>
+                                <label for="moshr-I" class="moshr-I-label">I</label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- MOS Low Resolution -->
+                    <div class="config-group">
+                        <div class="config-header">
+                            <span class="config-name">MOS Low Resolution</span>
+                        </div>
+                        <div class="checkbox-group">
+                            <div class="checkbox-item">
+                                <input type="checkbox" name="config" value="moslr-blue" id="moslr-blue" onchange="updateConfigOptions()" {% if 'moslr-blue' in request.form.getlist('config') %}checked{% endif %}>
+                                <label for="moslr-blue" class="moslr-blue-label">Blue</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" name="config" value="moslr-orange" id="moslr-orange" onchange="updateConfigOptions()" {% if 'moslr-orange' in request.form.getlist('config') %}checked{% endif %}>
+                                <label for="moslr-orange" class="moslr-orange-label">Orange</label>
+                            </div>
+                            <div class="checkbox-item">
+                                <input type="checkbox" name="config" value="moslr-red" id="moslr-red" onchange="updateConfigOptions()" {% if 'moslr-red' in request.form.getlist('config') %}checked{% endif %}>
+                                <label for="moslr-red" class="moslr-red-label">Red</label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Select/Deselect All Buttons -->
+                    <div class="button-group">
+                        <button type="button" class="btn btn-select" onclick="selectAll()">Select All</button>
+                        <button type="button" class="btn btn-deselect" onclick="deselectAll()">Deselect All</button>
+                    </div>
+
+                    <!-- Add spacing before conditional options -->
+                    <div style="height: 24px;"></div>
+                    
+                    <!-- Conditional Options -->
+                    <div id="spectral-coadding" class="section hidden">
+                        <div class="form-group">
+                            <label class="form-label">Spectral Coadding</label>
+                            <input type="number" name="COADD_WL" class="form-input" id="COADD_WL" step="any" value="{{ params['COADD_WL'] }}" onchange="validateCoaddWL()">
+                            <div id="error-COADD_WL" class="error-message hidden">Only positive numbers are allowed</div>
+                        </div>
+                    </div>
+                    <div id="spatial-coadding" class="section hidden">
+                        <div class="form-group">
+                            <label class="form-label">Spatial Coadding</label>
+                            <select name="COADD_XY" class="form-select" id="COADD_XY">
+                                <option value="1" {% if params['COADD_XY'] == 1 %}selected{% endif %}>1x1</option>
+                                <option value="3" {% if params['COADD_XY'] == 3 %}selected{% endif %}>3x3</option>
+                                <option value="5" {% if params['COADD_XY'] == 5 %}selected{% endif %}>5x5</option>
+                                <option value="7" {% if params['COADD_XY'] == 7 %}selected{% endif %}>7x7</option>
+                                <option value="9" {% if params['COADD_XY'] == 9 %}selected{% endif %}>9x9</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="object-displacement" class="section hidden">
+                        <div class="form-group">
+                            <label class="form-label">Object Displacement [arcsec]</label>
+                            <input type="number" name="OBJ_FIB_DISP" class="form-input" id="OBJ_FIB_DISP" step="any" value="{{ params['OBJ_FIB_DISP'] }}" onchange="validateObjDisp()">
+                            <div id="error-OBJ_FIB_DISP" class="error-message hidden">Value must be between 0 and 0.3</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- TAB 2: TARGET -->
+                <div id="target" class="tab-content">
+                    <div class="horizontal-group">
+                        <!-- SED Section -->
+                        <div class="vertical-section">
+                            <div class="section-title">SED</div>
+                            <div class="form-group">
+                                <select name="Obj_SED" class="form-select" id="Obj_SED" onchange="updateSEDOptions()">
+                                    <option value="template" {% if params['Obj_SED'] == 'template' %}selected{% endif %}>Template</option>
+                                    <option value="bb" {% if params['Obj_SED'] == 'bb' %}selected{% endif %}>Blackbody</option>
+                                    <option value="pl" {% if params['Obj_SED'] == 'pl' %}selected{% endif %}>Powerlaw</option>
+                                    <option value="line" {% if params['Obj_SED'] == 'line' %}selected{% endif %}>Emission Line</option>
+                                </select>
+                            </div>
+                            
+                            <!-- Template Options -->
+                            <div id="template-options">
+                                <div class="form-group">
+                                    <label class="form-label">Type</label>
+                                    <select name="SED_Name" class="form-select" id="SED_Name">
+                                        <option value="Pickles_O5V" {% if params['SED_Name'] == 'Pickles_O5V' %}selected{% endif %}>Pickles O5V</option>
+                                        <option value="Pickles_O9V" {% if params['SED_Name'] == 'Pickles_O9V' %}selected{% endif %}>Pickles O9V</option>
+                                        <option value="Pickles_B2IV" {% if params['SED_Name'] == 'Pickles_B2IV' %}selected{% endif %}>Pickles B2IV</option>
+                                        <option value="Pickles_B9III" {% if params['SED_Name'] == 'Pickles_B9III' %}selected{% endif %}>Pickles B9III</option>
+                                        <option value="Pickles_B9V" {% if params['SED_Name'] == 'Pickles_B9V' %}selected{% endif %}>Pickles B9V</option>
+                                        <option value="Pickles_A0III" {% if params['SED_Name'] == 'Pickles_A0III' %}selected{% endif %}>Pickles A0III</option>
+                                        <option value="Pickles_A0V" {% if params['SED_Name'] == 'Pickles_A0V' %}selected{% endif %}>Pickles A0V</option>
+                                        <option value="Pickles_G0V" {% if params['SED_Name'] == 'Pickles_G0V' %}selected{% endif %}>Pickles G0V</option>
+                                        <option value="Pickles_K2V" {% if params['SED_Name'] == 'Pickles_K2V' %}selected{% endif %}>Pickles K2V</option>
+                                        <option value="Pickles_K7V" {% if params['SED_Name'] == 'Pickles_K7V' %}selected{% endif %}>Pickles K7V</option>
+                                        <option value="Pickles_M2V" {% if params['SED_Name'] == 'Pickles_M2V' %}selected{% endif %}>Pickles M2V</option>
+                                        <option value="Kurucz_B1V" {% if params['SED_Name'] == 'Kurucz_B1V' %}selected{% endif %}>Kurucz B1V</option>
+                                        <option value="Kurucz_B8V" {% if params['SED_Name'] == 'Kurucz_B8V' %}selected{% endif %}>Kurucz B8V</option>
+                                        <option value="Kurucz_A1V" {% if params['SED_Name'] == 'Kurucz_A1V' %}selected{% endif %}>Kurucz A1V</option>
+                                        <option value="Kurucz_F0V" {% if params['SED_Name'] == 'Kurucz_F0V' %}selected{% endif %}>Kurucz F0V</option>
+                                        <option value="Kurucz_G2V" {% if params['SED_Name'] == 'Kurucz_G2V' %}selected{% endif %}>Kurucz G2V</option>
+                                        <option value="Kinney_ell" {% if params['SED_Name'] == 'Kinney_ell' %}selected{% endif %}>Kinney Elliptical</option>
+                                        <option value="Kinney_s0" {% if params['SED_Name'] == 'Kinney_s0' %}selected{% endif %}>Kinney S0</option>
+                                        <option value="Kinney_sa" {% if params['SED_Name'] == 'Kinney_sa' %}selected{% endif %}>Kinney Sa</option>
+                                        <option value="Kinney_sb" {% if params['SED_Name'] == 'Kinney_sb' %}selected{% endif %}>Kinney Sb</option>
+                                        <option value="Kinney_starb1" {% if params['SED_Name'] == 'Kinney_starb1' %}selected{% endif %}>Kinney Starburst 1</option>
+                                        <option value="Kinney_starb2" {% if params['SED_Name'] == 'Kinney_starb2' %}selected{% endif %}>Kinney Starburst 2</option>
+                                        <option value="Kinney_starb3" {% if params['SED_Name'] == 'Kinney_starb3' %}selected{% endif %}>Kinney Starburst 3</option>
+                                        <option value="Kinney_starb4" {% if params['SED_Name'] == 'Kinney_starb4' %}selected{% endif %}>Kinney Starburst 4</option>
+                                        <option value="Kinney_starb5" {% if params['SED_Name'] == 'Kinney_starb5' %}selected{% endif %}>Kinney Starburst 5</option>
+                                        <option value="Kinney_starb6" {% if params['SED_Name'] == 'Kinney_starb6' %}selected{% endif %}>Kinney Starburst 6</option>
+                                        <option value="Galev_E" {% if params['SED_Name'] == 'Galev_E' %}selected{% endif %}>Galev E</option>
+                                        <option value="qso-interp" {% if params['SED_Name'] == 'qso-interp' %}selected{% endif %}>QSO Interpolated</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Redshift (z)</label>
+                                    <input type="number" name="Z" class="form-input" id="Z" step="any" value="{{ params['Z'] }}" onchange="validateRedshift()">
+                                    <div id="error-Z" class="error-message hidden">Redshift must be ≥ 0</div>
+                                </div>
+                            </div>
+                            
+                            <!-- Blackbody Options -->
+                            <div id="blackbody-options" class="hidden">
+                                <div class="form-group">
+                                    <label class="form-label">Temperature [K]</label>
+                                    <input type="number" name="BB_Temp" class="form-input" id="BB_Temp" step="any" value="{{ params['BB_Temp'] }}" onchange="validateBBTemp()">
+                                    <div id="error-BB_Temp" class="error-message hidden">Temperature must be > 0</div>
+                                </div>
+                            </div>
+                            
+                            <!-- Powerlaw Options -->
+                            <div id="powerlaw-options" class="hidden">
+                                <div class="form-group">
+                                    <label class="form-label">Index</label>
+                                    <input type="number" name="PL_Index" class="form-input" id="PL_Index" step="any" value="{{ params['PL_Index'] }}">
+                                </div>
+                            </div>
+                            
+                            <!-- Emission Line Options -->
+                            <div id="line-options" class="hidden">
+                                <div class="form-group">
+                                    <label class="form-label">Central λ [Å]</label>
+                                    <input type="number" name="SEL_CWAV" class="form-input" id="SEL_CWAV" step="any" value="{{ params['SEL_CWAV'] }}" onchange="validateSELCWAV()">
+                                    <div id="error-SEL_CWAV" class="error-message hidden">Central wavelength must be > 0</div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">FWHM [Å]</label>
+                                    <input type="number" name="SEL_FWHM" class="form-input" id="SEL_FWHM" step="any" value="{{ params['SEL_FWHM'] }}" onchange="validateSELFWHM()">
+                                    <div id="error-SEL_FWHM" class="error-message hidden">FWHM must be > 0</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Brightness Section -->
+                        <div class="vertical-section">
+                            <div class="section-title">Brightness</div>
+                            
+                            <div id="magnitude-section">
+                                <div class="form-group">
+                                    <select name="MAG_SYS" class="form-select" id="MAG_SYS">
+                                        <option value="Vega" {% if params['MAG_SYS'] == 'Vega' %}selected{% endif %}>Vega</option>
+                                        <option value="AB" {% if params['MAG_SYS'] == 'AB' %}selected{% endif %}>AB</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label" id="magnitude-label">Magnitude</label>
+                                    <input type="number" name="OBJ_MAG" class="form-input" id="OBJ_MAG" step="any" value="{{ params['OBJ_MAG'] }}">
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">Filter</label>
+                                    <select name="MAG_FIL" class="form-select" id="MAG_FIL">
+                                        <option value="U" {% if params['MAG_FIL'] == 'U' %}selected{% endif %}>U</option>
+                                        <option value="B" {% if params['MAG_FIL'] == 'B' %}selected{% endif %}>B</option>
+                                        <option value="V" {% if params['MAG_FIL'] == 'V' %}selected{% endif %}>V</option>
+                                        <option value="R" {% if params['MAG_FIL'] == 'R' %}selected{% endif %}>R</option>
+                                        <option value="I" {% if params['MAG_FIL'] == 'I' %}selected{% endif %}>I</option>
+                                        <option value="J" {% if params['MAG_FIL'] == 'J' %}selected{% endif %}>J</option>
+                                        <option value="H" {% if params['MAG_FIL'] == 'H' %}selected{% endif %}>H</option>
+                                        <option value="K" {% if params['MAG_FIL'] == 'K' %}selected{% endif %}>K</option>
+                                        <option value="uSDSS" {% if params['MAG_FIL'] == 'uSDSS' %}selected{% endif %}>u SDSS</option>
+                                        <option value="gSDSS" {% if params['MAG_FIL'] == 'gSDSS' %}selected{% endif %}>g SDSS</option>
+                                        <option value="rSDSS" {% if params['MAG_FIL'] == 'rSDSS' %}selected{% endif %}>r SDSS</option>
+                                        <option value="iSDSS" {% if params['MAG_FIL'] == 'iSDSS' %}selected{% endif %}>i SDSS</option>
+                                        <option value="zSDSS" {% if params['MAG_FIL'] == 'zSDSS' %}selected{% endif %}>z SDSS</option>
+                                        <option value="uLSST" {% if params['MAG_FIL'] == 'uLSST' %}selected{% endif %}>u LSST</option>
+                                        <option value="gLSST" {% if params['MAG_FIL'] == 'gLSST' %}selected{% endif %}>g LSST</option>
+                                        <option value="rLSST" {% if params['MAG_FIL'] == 'rLSST' %}selected{% endif %}>r LSST</option>
+                                        <option value="iLSST" {% if params['MAG_FIL'] == 'iLSST' %}selected{% endif %}>i LSST</option>
+                                        <option value="zLSST" {% if params['MAG_FIL'] == 'zLSST' %}selected{% endif %}>z LSST</option>
+                                        <option value="GbpGAIA" {% if params['MAG_FIL'] == 'GbpGAIA' %}selected{% endif %}>G_bp GAIA</option>
+                                        <option value="GGAIA" {% if params['MAG_FIL'] == 'GGAIA' %}selected{% endif %}>G GAIA</option>
+                                        <option value="GrpGAIA" {% if params['MAG_FIL'] == 'GrpGAIA' %}selected{% endif %}>G_rp GAIA</option>
+                                        <option value="GrvsGAIA" {% if params['MAG_FIL'] == 'GrvsGAIA' %}selected{% endif %}>G_rvs GAIA</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div id="flux-section" class="hidden">
+                                <div class="form-group">
+                                    <label class="form-label" id="flux-label">Flux [erg/cm²/s]</label>
+                                    <input type="number" name="SEL_FLUX" class="form-input" id="SEL_FLUX" step="any" value="{{ params['SEL_FLUX'] }}" onchange="validateSELFLUX()">
+                                    <div id="error-SEL_FLUX" class="error-message hidden">Flux must be > 0</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Morphology Section -->
+                        <div class="vertical-section">
+                            <div class="section-title">Morphology</div>
+                            <div class="form-group">
+                                <select name="Obj_Spat_Dis" class="form-select" id="Obj_Spat_Dis" onchange="updateMorphologyOptions()">
+                                    <option value="sb" {% if params['Obj_Spat_Dis'] == 'sb' %}selected{% endif %}>Surface Brightness</option>
+                                    <option value="ps" {% if params['Obj_Spat_Dis'] == 'ps' %}selected{% endif %}>Point Source</option>
+                                    <option value="resolved" {% if params['Obj_Spat_Dis'] == 'resolved' %}selected{% endif %}>Extended (Sersic)</option>
+                                </select>
+                            </div>
+                            
+                            <div id="sersic-options" class="hidden">
+                                <input type="hidden" name="IMA" value="sersic" id="IMA">
+                                <div class="form-group">
+                                    <label class="form-label">R_eff [arcsec]</label>
+                                    <input type="number" name="Sersic_Reff" class="form-input" id="Sersic_Reff" step="any" value="{{ params['Sersic_Reff'] }}" onchange="validateSersicReff()">
+                                    <div id="error-Sersic_Reff" class="error-message hidden">R_eff must be > 0</div>
+                                </div>
+                                <div class="form-group">
+                                    <label class="form-label">n</label>
+                                    <input type="number" name="Sersic_Ind" class="form-input" id="Sersic_Ind" step="any" value="{{ params['Sersic_Ind'] }}" onchange="validateSersicInd()">
+                                    <div id="error-Sersic_Ind" class="error-message hidden">n must be > 0</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- TAB 3: SKY CONDITIONS & ATMOSPHERE -->
+                <div id="sky" class="tab-content">
+                    <div class="form-group">
+                        <label class="form-label">Airmass</label>
+                        <input type="number" name="AM" class="form-input" id="AM" step="any" value="{{ params['AM'] }}" onchange="validateAM()">
+                        <div id="error-AM" class="error-message hidden">Airmass must be between 1 and 3</div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">PWV</label>
+                        <select name="PWV" class="form-select" id="PWV">
+                            <option value="0.05" {% if params['PWV'] == 0.05 %}selected{% endif %}>0.05</option>
+                            <option value="0.1" {% if params['PWV'] == 0.1 %}selected{% endif %}>0.1</option>
+                            <option value="0.25" {% if params['PWV'] == 0.25 %}selected{% endif %}>0.25</option>
+                            <option value="0.5" {% if params['PWV'] == 0.5 %}selected{% endif %}>0.5</option>
+                            <option value="1.0" {% if params['PWV'] == 1.0 %}selected{% endif %}>1.0</option>
+                            <option value="1.5" {% if params['PWV'] == 1.5 %}selected{% endif %}>1.5</option>
+                            <option value="2.5" {% if params['PWV'] == 2.5 %}selected{% endif %}>2.5</option>
+                            <option value="3.5" {% if params['PWV'] == 3.5 %}selected{% endif %}>3.5</option>
+                            <option value="5.0" {% if params['PWV'] == 5.0 %}selected{% endif %}>5.0</option>
+                            <option value="7.5" {% if params['PWV'] == 7.5 %}selected{% endif %}>7.5</option>
+                            <option value="10.0" {% if params['PWV'] == 10.0 %}selected{% endif %}>10.0</option>
+                            <option value="20.0" {% if params['PWV'] == 20.0 %}selected{% endif %}>20.0</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">FLI</label>
+                        <input type="number" name="FLI" class="form-input" id="FLI" step="any" value="{{ params['FLI'] }}" onchange="validateFLI()">
+                        <div id="error-FLI" class="error-message hidden">FLI must be between 0 and 1</div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Seeing at 5000 Å</label>
+                        <input type="number" name="SEE" class="form-input" id="SEE" step="any" value="{{ params['SEE'] }}" onchange="validateSEE()">
+                        <div id="error-SEE" class="error-message hidden">Seeing must be positive</div>
+                    </div>
+                </div>
+                
+                <!-- TAB 4: COMPUTE -->
+                <div id="compute" class="tab-content">
+                    <div class="form-group">
+                        <label class="form-label">Computation Mode</label>
+                        <select name="compute_mode" class="form-select" id="compute_mode" onchange="updateComputeMode()">
+                            <option value="dit_ndit" {% if params['compute_mode'] == 'dit_ndit' %}selected{% endif %}>DIT & NDIT</option>
+                            <option value="dit_snr" {% if params['compute_mode'] == 'dit_snr' %}selected{% endif %}>DIT & SNR</option>
+                            <option value="ndit_snr" {% if params['compute_mode'] == 'ndit_snr' %}selected{% endif %}>NDIT & SNR</option>
+                        </select>
+                    </div>
+                    
+                    <div id="dit-input">
+                        <div class="form-group">
+                            <label class="form-label">DIT [s]</label>
+                            <input type="number" name="DIT" class="form-input" id="DIT" step="any" value="{{ params['DIT'] }}" onchange="validateDIT()">
+                            <div id="error-DIT" class="error-message hidden">DIT must be positive</div>
+                        </div>
+                    </div>
+                    
+                    <div id="ndit-input">
+                        <div class="form-group">
+                            <label class="form-label">NDIT</label>
+                            <input type="number" name="NDIT" class="form-input" id="NDIT" step="1" value="{{ params['NDIT'] }}" onchange="validateNDIT()">
+                            <div id="error-NDIT" class="error-message hidden">NDIT must be a positive integer</div>
+                        </div>
+                    </div>
+                    
+                    <div id="snr-input" class="hidden">
+                        <div class="form-group">
+                            <label class="form-label">SNR</label>
+                            <input type="number" name="SNR" class="form-input" id="SNR" step="any" value="{{ params['SNR'] }}" onchange="validateSNR()">
+                            <div id="error-SNR" class="error-message hidden">SNR must be positive</div>
+                        </div>
+                    </div>
+                    
+                    <div id="wavelength-input" class="hidden">
+                        <div class="form-group">
+                            <label class="form-label">Wavelength [Å]</label>
+                            <input type="number" name="Lam_Ref" class="form-input" id="Lam_Ref" step="any" value="{{ params['Lam_Ref'] }}" onchange="validateLamRef()">
+                            <div id="error-Lam_Ref" class="error-message hidden">Wavelength must be positive</div>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="compute-btn">Compute</button>
+                </div>
+            </form>
+        </div>
+        
+        <!-- RIGHT PANEL: Results -->
+        <div class="right-panel">
+            <div class="results-panel">
+                <div class="results-title">Results</div>
+                <div class="results-content">
+                    {% if debug_output %}
+                        <div style="width:100%;display:flex;flex-direction:column;gap:0px;">
+                            <div id="snr-plot" style="width:100%;height:320px;margin-bottom:-2px;"></div>
+                            <div id="snr-plot-secondary" style="width:100%;height:320px;margin-top:-2px;margin-bottom:0;display:none;"></div>
+                        </div>
+                        <div id="plot-legend" style="width:100%;text-align:center;margin-top:12px;margin-bottom:0;"></div>
+                        <pre>{{ debug_output }}</pre>
+                    {% else %}
+                        Configure parameters and click Compute to see results here...
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Add select/deselect all buttons for plot legend
+        function addLegendControls(traces) {
+            var controlsDiv = document.getElementById('plot-legend-controls');
+            if (!traces || traces.length === 0) { controlsDiv.innerHTML = ''; return; }
+            controlsDiv.innerHTML = '<button id="select-all-traces" style="margin-right:8px;">Select All</button>' +
+                '<button id="deselect-all-traces">Deselect All</button>';
+            document.getElementById('select-all-traces').onclick = function() {
+                Plotly.restyle('snr-plot', {visible: true});
+            };
+            document.getElementById('deselect-all-traces').onclick = function() {
+                Plotly.restyle('snr-plot', {visible: false});
+            };
+        }
+        // Load Plotly.js dynamically if not present
+        function loadPlotly(callback) {
+            if (window.Plotly) { callback(); return; }
+            var script = document.createElement('script');
+            script.src = 'https://cdn.plot.ly/plotly-latest.min.js';
+            script.onload = callback;
+            document.head.appendChild(script);
+        }
+
+        // Render SNR plot if plot_data is available
+        function renderSNRPlot() {
+            var plotDataRaw = {{ plot_data|tojson|safe }};
+            if (!plotDataRaw || !plotDataRaw.traces || plotDataRaw.traces.length === 0) {
+                document.getElementById('snr-plot').innerHTML = '';
+                document.getElementById('snr-plot-secondary').innerHTML = '';
+                document.getElementById('plot-legend').innerHTML = '';
+                return;
+            }
+            // Group traces by config name (deduplicate legend)
+            var configTraces = {};
+            var mainTraces = [];
+            var secondaryTraces = [];
+            plotDataRaw.traces.forEach(function(trace, idx) {
+                var cleanName = trace.name.replace(/\s*\(.*\)/, '');
+                if (!configTraces[cleanName]) {
+                    configTraces[cleanName] = [];
+                }
+                configTraces[cleanName].push({
+                    idx: idx,
+                    secondary: !!trace.secondary
+                });
+                var plotlyTrace = {
+                    x: trace.x,
+                    y: trace.y,
+                    name: cleanName,
+                    type: 'scatter',
+                    mode: 'lines',
+                    line: { color: trace.color },
+                    visible: true
+                };
+                if (trace.secondary) {
+                    secondaryTraces.push(plotlyTrace);
+                } else {
+                    mainTraces.push(plotlyTrace);
+                }
+            });
+            var axisLabelFont = {
+                family: 'Segoe UI, Tahoma, Geneva, Verdana, sans-serif',
+                size: 16,
+                color: '#222',
+                weight: 'bold'
+            };
+            var layoutMain = {
+                title: 'SNR x spectral pixel',
+                xaxis: {
+                    title: 'Wavelength [Å]',
+                    showgrid: true,
+                    gridcolor: '#e0e0e0',
+                    zeroline: false,
+                    linecolor: '#888',
+                    linewidth: 2,
+                    mirror: true,
+                    griddash: 'solid',
+                    titlefont: axisLabelFont
+                },
+                yaxis: {
+                    title: 'SNR',
+                    showgrid: true,
+                    gridcolor: '#e0e0e0',
+                    zeroline: false,
+                    linecolor: '#888',
+                    linewidth: 2,
+                    mirror: true,
+                    griddash: 'solid',
+                    titlefont: axisLabelFont
+                },
+                showlegend: false,
+                margin: { t: 40, l: 60, r: 30, b: 50 },
+                plot_bgcolor: '#fff',
+                paper_bgcolor: '#fff',
+            };
+            var layoutSecondary = JSON.parse(JSON.stringify(layoutMain));
+            layoutSecondary.title = 'SNR x spectral coadding';
+            layoutSecondary.showlegend = false;
+            layoutSecondary.xaxis.titlefont = axisLabelFont;
+            layoutSecondary.yaxis.titlefont = axisLabelFont;
+            layoutSecondary.xaxis.title = 'Wavelength [Å]';
+            layoutSecondary.yaxis.title = 'SNR';
+            // If both plots, remove x label from top plot
+            if (secondaryTraces.length > 0) {
+                layoutMain.xaxis.title = '';
+            }
+            Plotly.newPlot('snr-plot', mainTraces, layoutMain, {responsive: true});
+            var secondaryDiv = document.getElementById('snr-plot-secondary');
+            if (secondaryTraces.length > 0) {
+                secondaryDiv.style.display = 'block';
+                Plotly.newPlot('snr-plot-secondary', secondaryTraces, layoutSecondary, {responsive: true});
+                // Link x-axes for zoom/pan
+                var snrPlot = document.getElementById('snr-plot');
+                var snrPlotSecondary = document.getElementById('snr-plot-secondary');
+                snrPlot.on('plotly_relayout', function(e) {
+                    if (e['xaxis.range[0]'] !== undefined && e['xaxis.range[1]'] !== undefined) {
+                        Plotly.relayout(snrPlotSecondary, {
+                            'xaxis.range': [e['xaxis.range[0]'], e['xaxis.range[1]']]
+                        });
+                    }
+                });
+                snrPlotSecondary.on('plotly_relayout', function(e) {
+                    if (e['xaxis.range[0]'] !== undefined && e['xaxis.range[1]'] !== undefined) {
+                        Plotly.relayout(snrPlot, {
+                            'xaxis.range': [e['xaxis.range[0]'], e['xaxis.range[1]']]
+                        });
+                    }
+                });
+            } else {
+                secondaryDiv.innerHTML = '';
+                secondaryDiv.style.display = 'none';
+            }
+            // Shared legend below both plots, deduplicated and clickable
+            var legendDiv = document.getElementById('plot-legend');
+            legendDiv.innerHTML = '';
+            var legendHtml = '<div style="display:flex;justify-content:center;flex-wrap:wrap;gap:18px;">';
+            var colorMap = {};
+            // Get color for each config from first trace
+            Object.keys(configTraces).forEach(function(configName) {
+                var firstIdx = configTraces[configName][0].idx;
+                var color = plotDataRaw.traces[firstIdx].color;
+                colorMap[configName] = color;
+            });
+            Object.keys(configTraces).forEach(function(configName) {
+                legendHtml += '<span class="legend-item" data-config="' + configName + '" style="display:flex;align-items:center;gap:6px;font-size:14px;cursor:pointer;user-select:none;"><span style="width:18px;height:4px;background:' + colorMap[configName] + ';display:inline-block;border-radius:2px;"></span>' + configName + '</span>';
+            });
+            legendHtml += '</div>';
+            legendDiv.innerHTML = legendHtml;
+            // Legend click handler: toggle visibility for all traces with this config in both plots
+            var visibleConfigs = {};
+            Object.keys(configTraces).forEach(function(configName) { visibleConfigs[configName] = true; });
+            Array.from(legendDiv.querySelectorAll('.legend-item')).forEach(function(item) {
+                item.addEventListener('click', function() {
+                    var configName = item.getAttribute('data-config');
+                    visibleConfigs[configName] = !visibleConfigs[configName];
+                    // Update main plot
+                    var mainVis = mainTraces.map(function(trace) {
+                        return (trace.name === configName) ? visibleConfigs[configName] : trace.visible;
+                    });
+                    Plotly.restyle('snr-plot', {visible: mainVis});
+                    // Update secondary plot
+                    var secVis = secondaryTraces.map(function(trace) {
+                        return (trace.name === configName) ? visibleConfigs[configName] : trace.visible;
+                    });
+                    if (secondaryTraces.length > 0) {
+                        Plotly.restyle('snr-plot-secondary', {visible: secVis});
+                    }
+                    // Style legend item
+                    if (visibleConfigs[configName]) {
+                        item.style.opacity = '1';
+                    } else {
+                        item.style.opacity = '0.4';
+                    }
+                });
+            });
+    }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Load Plotly and render plot if data exists
+            loadPlotly(renderSNRPlot);
+        });
+        // Tab switching function
+        function switchTab(event, tabId) {
+            // Remove active class from all tabs and tab contents
+            const tabs = document.querySelectorAll('.tab');
+            const tabContents = document.querySelectorAll('.tab-content');
+            
+            tabs.forEach(tab => tab.classList.remove('active'));
+            tabContents.forEach(content => content.classList.remove('active'));
+            
+            // Add active class to clicked tab and corresponding content
+            event.target.classList.add('active');
+            document.getElementById(tabId).classList.add('active');
+        }
+        
+        // Select all configurations
+        function selectAll() {
+            const checkboxes = document.querySelectorAll('input[name="config"]');
+            checkboxes.forEach(cb => cb.checked = true);
+            updateConfigOptions();
+        }
+        
+        // Deselect all configurations
+        function deselectAll() {
+            const checkboxes = document.querySelectorAll('input[name="config"]');
+            checkboxes.forEach(cb => cb.checked = false);
+            updateConfigOptions();
+        }
+        
+        // Update configuration options based on selections
+        function updateConfigOptions() {
+            const checkboxes = document.querySelectorAll('input[name="config"]:checked');
+            const selectedConfigs = Array.from(checkboxes).map(cb => cb.value);
+            
+            // Check if any configuration is selected
+            const anySelected = selectedConfigs.length > 0;
+            const hasIFS = selectedConfigs.some(c => c.startsWith('ifs-'));
+            const hasMOS = selectedConfigs.some(c => c.startsWith('moshr-') || c.startsWith('moslr-'));
+            
+            // Show/hide spectral coadding
+            document.getElementById('spectral-coadding').classList.toggle('hidden', !anySelected);
+            
+            // Show/hide spatial coadding (only for IFS)
+            document.getElementById('spatial-coadding').classList.toggle('hidden', !hasIFS);
+            
+            // Show/hide object displacement (only for MOS)
+            document.getElementById('object-displacement').classList.toggle('hidden', !hasMOS);
+        }
+        
+        // Update SED options
+        function updateSEDOptions() {
+            const sedType = document.getElementById('Obj_SED').value;
+            
+            // Hide all SED option groups
+            document.getElementById('template-options').classList.add('hidden');
+            document.getElementById('blackbody-options').classList.add('hidden');
+            document.getElementById('powerlaw-options').classList.add('hidden');
+            document.getElementById('line-options').classList.add('hidden');
+            
+            // Show appropriate option group
+            if (sedType === 'template') {
+                document.getElementById('template-options').classList.remove('hidden');
+            } else if (sedType === 'bb') {
+                document.getElementById('blackbody-options').classList.remove('hidden');
+            } else if (sedType === 'pl') {
+                document.getElementById('powerlaw-options').classList.remove('hidden');
+            } else if (sedType === 'line') {
+                document.getElementById('line-options').classList.remove('hidden');
+            }
+            
+            // Update brightness section
+            updateBrightnessSection();
+            // Update compute mode to handle wavelength visibility
+            updateComputeMode();
+        }
+        
+        // Update brightness section based on SED type and morphology
+        function updateBrightnessSection() {
+            const sedType = document.getElementById('Obj_SED').value;
+            const morphology = document.getElementById('Obj_Spat_Dis').value;
+            
+            const magnitudeSection = document.getElementById('magnitude-section');
+            const fluxSection = document.getElementById('flux-section');
+            const magnitudeLabel = document.getElementById('magnitude-label');
+            const fluxLabel = document.getElementById('flux-label');
+            
+            if (sedType === 'line') {
+                // Show flux section for emission line
+                magnitudeSection.classList.add('hidden');
+                fluxSection.classList.remove('hidden');
+                
+                if (morphology === 'sb') {
+                    fluxLabel.textContent = 'Flux [erg/cm²/s/arcsec²]';
+                } else {
+                    fluxLabel.textContent = 'Flux [erg/cm²/s]';
+                }
+            } else {
+                // Show magnitude section for other SED types
+                magnitudeSection.classList.remove('hidden');
+                fluxSection.classList.add('hidden');
+                
+                if (morphology === 'sb') {
+                    magnitudeLabel.textContent = 'Magnitude per arcsec²';
+                } else {
+                    magnitudeLabel.textContent = 'Magnitude';
+                }
+            }
+        }
+        
+        // Update morphology options
+        function updateMorphologyOptions() {
+            const morphology = document.getElementById('Obj_Spat_Dis').value;
+            const sersicOptions = document.getElementById('sersic-options');
+            
+            if (morphology === 'resolved') {
+                sersicOptions.classList.remove('hidden');
+                document.getElementById('IMA').value = 'sersic';
+            } else {
+                sersicOptions.classList.add('hidden');
+            }
+            
+            // Update brightness label
+            updateBrightnessSection();
+        }
+        
+        // Update compute mode options
+        function updateComputeMode() {
+            const mode = document.getElementById('compute_mode').value;
+            const sedType = document.getElementById('Obj_SED').value;
+            
+            const ditInput = document.getElementById('dit-input');
+            const nditInput = document.getElementById('ndit-input');
+            const snrInput = document.getElementById('snr-input');
+            const wavelengthInput = document.getElementById('wavelength-input');
+            
+            // Show/hide inputs based on mode
+            if (mode === 'dit_ndit') {
+                ditInput.classList.remove('hidden');
+                nditInput.classList.remove('hidden');
+                snrInput.classList.add('hidden');
+                wavelengthInput.classList.add('hidden');
+            } else if (mode === 'dit_snr') {
+                ditInput.classList.remove('hidden');
+                nditInput.classList.add('hidden');
+                snrInput.classList.remove('hidden');
+                // Show wavelength only if NOT emission line
+                wavelengthInput.classList.toggle('hidden', sedType === 'line');
+            } else if (mode === 'ndit_snr') {
+                ditInput.classList.add('hidden');
+                nditInput.classList.remove('hidden');
+                snrInput.classList.remove('hidden');
+                // Show wavelength only if NOT emission line
+                wavelengthInput.classList.toggle('hidden', sedType === 'line');
+            }
+        }
+        
+        // Validation functions
+        function validateCoaddWL() {
+            const input = document.getElementById('COADD_WL');
+            const error = document.getElementById('error-COADD_WL');
+            const value = parseFloat(input.value);
+            
+            if (value <= 0 || isNaN(value)) {
+                input.classList.add('error');
+                error.classList.remove('hidden');
+            } else {
+                input.classList.remove('error');
+                error.classList.add('hidden');
+            }
+        }
+        
+        function validateObjDisp() {
+            const input = document.getElementById('OBJ_FIB_DISP');
+            const error = document.getElementById('error-OBJ_FIB_DISP');
+            const value = parseFloat(input.value);
+            
+            if (value < 0 || value > 0.3 || isNaN(value)) {
+                input.classList.add('error');
+                error.classList.remove('hidden');
+            } else {
+                input.classList.remove('error');
+                error.classList.add('hidden');
+            }
+        }
+        
+        function validateRedshift() {
+            const input = document.getElementById('Z');
+            const error = document.getElementById('error-Z');
+            const value = parseFloat(input.value);
+            
+            if (value < 0 || isNaN(value)) {
+                input.classList.add('error');
+                error.classList.remove('hidden');
+            } else {
+                input.classList.remove('error');
+                error.classList.add('hidden');
+            }
+        }
+        
+        function validateBBTemp() {
+            const input = document.getElementById('BB_Temp');
+            const error = document.getElementById('error-BB_Temp');
+            const value = parseFloat(input.value);
+            
+            if (value <= 0 || isNaN(value)) {
+                input.classList.add('error');
+                error.classList.remove('hidden');
+            } else {
+                input.classList.remove('error');
+                error.classList.add('hidden');
+            }
+        }
+        
+        function validateSELCWAV() {
+            const input = document.getElementById('SEL_CWAV');
+            const error = document.getElementById('error-SEL_CWAV');
+            const value = parseFloat(input.value);
+            
+            if (value <= 0 || isNaN(value)) {
+                input.classList.add('error');
+                error.classList.remove('hidden');
+            } else {
+                input.classList.remove('error');
+                error.classList.add('hidden');
+            }
+        }
+        
+        function validateSELFWHM() {
+            const input = document.getElementById('SEL_FWHM');
+            const error = document.getElementById('error-SEL_FWHM');
+            const value = parseFloat(input.value);
+            
+            if (value <= 0 || isNaN(value)) {
+                input.classList.add('error');
+                error.classList.remove('hidden');
+            } else {
+                input.classList.remove('error');
+                error.classList.add('hidden');
+            }
+        }
+        
+        function validateSELFLUX() {
+            const input = document.getElementById('SEL_FLUX');
+            const error = document.getElementById('error-SEL_FLUX');
+            const value = parseFloat(input.value);
+            
+            if (value <= 0 || isNaN(value)) {
+                input.classList.add('error');
+                error.classList.remove('hidden');
+            } else {
+                input.classList.remove('error');
+                error.classList.add('hidden');
+            }
+        }
+        
+        function validateSersicReff() {
+            const input = document.getElementById('Sersic_Reff');
+            const error = document.getElementById('error-Sersic_Reff');
+            const value = parseFloat(input.value);
+            
+            if (value <= 0 || isNaN(value)) {
+                input.classList.add('error');
+                error.classList.remove('hidden');
+            } else {
+                input.classList.remove('error');
+                error.classList.add('hidden');
+            }
+        }
+        
+        function validateSersicInd() {
+            const input = document.getElementById('Sersic_Ind');
+            const error = document.getElementById('error-Sersic_Ind');
+            const value = parseFloat(input.value);
+            
+            if (value <= 0 || isNaN(value)) {
+                input.classList.add('error');
+                error.classList.remove('hidden');
+            } else {
+                input.classList.remove('error');
+                error.classList.add('hidden');
+            }
+        }
+        
+        function validateAM() {
+            const input = document.getElementById('AM');
+            const error = document.getElementById('error-AM');
+            const value = parseFloat(input.value);
+            
+            if (value < 1 || value > 3 || isNaN(value)) {
+                input.classList.add('error');
+                error.classList.remove('hidden');
+            } else {
+                input.classList.remove('error');
+                error.classList.add('hidden');
+            }
+        }
+        
+        function validateFLI() {
+            const input = document.getElementById('FLI');
+            const error = document.getElementById('error-FLI');
+            const value = parseFloat(input.value);
+            
+            if (value < 0 || value > 1 || isNaN(value)) {
+                input.classList.add('error');
+                error.classList.remove('hidden');
+            } else {
+                input.classList.remove('error');
+                error.classList.add('hidden');
+            }
+        }
+        
+        function validateSEE() {
+            const input = document.getElementById('SEE');
+            const error = document.getElementById('error-SEE');
+            const value = parseFloat(input.value);
+            
+            if (value <= 0 || isNaN(value)) {
+                input.classList.add('error');
+                error.classList.remove('hidden');
+            } else {
+                input.classList.remove('error');
+                error.classList.add('hidden');
+            }
+        }
+        
+        function validateDIT() {
+            const input = document.getElementById('DIT');
+            const error = document.getElementById('error-DIT');
+            const value = parseFloat(input.value);
+            
+            if (value <= 0 || isNaN(value)) {
+                input.classList.add('error');
+                error.classList.remove('hidden');
+            } else {
+                input.classList.remove('error');
+                error.classList.add('hidden');
+            }
+        }
+        
+        function validateNDIT() {
+            const input = document.getElementById('NDIT');
+            const error = document.getElementById('error-NDIT');
+            const value = parseFloat(input.value);
+            
+            if (value <= 0 || !Number.isInteger(value) || isNaN(value)) {
+                input.classList.add('error');
+                error.classList.remove('hidden');
+            } else {
+                input.classList.remove('error');
+                error.classList.add('hidden');
+            }
+        }
+        
+        function validateSNR() {
+            const input = document.getElementById('SNR');
+            const error = document.getElementById('error-SNR');
+            const value = parseFloat(input.value);
+            
+            if (value <= 0 || isNaN(value)) {
+                input.classList.add('error');
+                error.classList.remove('hidden');
+            } else {
+                input.classList.remove('error');
+                error.classList.add('hidden');
+            }
+        }
+        
+        function validateLamRef() {
+            const input = document.getElementById('Lam_Ref');
+            const error = document.getElementById('error-Lam_Ref');
+            const value = parseFloat(input.value);
+            
+            if (value <= 0 || isNaN(value)) {
+                input.classList.add('error');
+                error.classList.remove('hidden');
+            } else {
+                input.classList.remove('error');
+                error.classList.add('hidden');
+            }
+        }
+        
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            updateConfigOptions();
+            updateSEDOptions();
+            updateMorphologyOptions();
+            updateComputeMode();
+            // Restore last active tab after submit
+            const lastTab = sessionStorage.getItem('activeTab');
+            if (lastTab) {
+                switchTab({target: document.querySelector('.tab[onclick*="' + lastTab + '"]')}, lastTab);
+            }
+            // Save tab on click
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', function() {
+                    sessionStorage.setItem('activeTab', tab.getAttribute('onclick').match(/'(.*?)'/)[1]);
+                });
+            });
+        });
+    </script>
+</body>
+</html>

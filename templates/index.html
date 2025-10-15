@@ -150,7 +150,7 @@
         
         /* MOSLR colors */
         .moslr-blue-label { background: #90caf9; color: #0d47a1; }
-        .moslr-orange-label { background: #ffcc80; color: #e65100; }
+        .moslr-green-label { background: #d4ff4f; color: #2e7d32; }
         .moslr-red-label { background: #ef9a9a; color: #b71c1c; }
         
         .checkbox-item input[type="checkbox"]:checked + label {
@@ -358,8 +358,8 @@
                                 <label for="moslr-blue" class="moslr-blue-label">Blue</label>
                             </div>
                             <div class="checkbox-item">
-                                <input type="checkbox" name="config" value="moslr-orange" id="moslr-orange" onchange="updateConfigOptions()" {% if 'moslr-orange' in request.form.getlist('config') %}checked{% endif %}>
-                                <label for="moslr-orange" class="moslr-orange-label">Orange</label>
+                                <input type="checkbox" name="config" value="moslr-green" id="moslr-green" onchange="updateConfigOptions()" {% if 'moslr-green' in request.form.getlist('config') %}checked{% endif %}>
+                                <label for="moslr-green" class="moslr-green-label">Green</label>
                             </div>
                             <div class="checkbox-item">
                                 <input type="checkbox" name="config" value="moslr-red" id="moslr-red" onchange="updateConfigOptions()" {% if 'moslr-red' in request.form.getlist('config') %}checked{% endif %}>
@@ -676,7 +676,7 @@
                         <div id="plot-legend" style="width:100%;text-align:center;margin-top:12px;margin-bottom:0;"></div>
                         <pre>{{ debug_output }}</pre>
                     {% else %}
-                        Configure parameters and click Compute to see results here...
+Configure parameters and click Compute to see results here...
                     {% endif %}
                 </div>
             </div>

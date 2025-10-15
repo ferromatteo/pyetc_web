@@ -1,5 +1,5 @@
 from flask import Flask, render_template, request, jsonify
-from pyetc_dev.wst import WST
+from pyetc_wst.wst import WST
 import warnings
 import traceback
 import json
@@ -8,14 +8,11 @@ warnings.filterwarnings('ignore')
 
 app = Flask(__name__)
 
-global NCOADD
-NCOADD = 1.5  # Factor to handle edge effects in spectral coadding
-
 # All possible instruments and channels
 INSTRUMENTS = ['ifs', 'moshr', 'moslr']
 CHANNELS = {
     'ifs': ['blue', 'red'],
-    'moslr': ['blue', 'orange', 'red'],
+    'moslr': ['blue', 'green', 'red'],
     'moshr': ['U', 'B', 'V', 'I']
 }
 
@@ -28,7 +25,7 @@ COLORS = {
     'moshr-V': '#2e7d32',
     'moshr-I': '#d84315',
     'moslr-blue': '#0d47a1',
-    'moslr-orange': '#e65100',
+    'moslr-green': '#388e3c',  
     'moslr-red': '#b71c1c'
 }
 
@@ -51,40 +48,40 @@ def index():
     
     # Default values for all parameters
     default_params = {
-        "NDIT": 3,
+        "NDIT": 1,
         "DIT": 600, 
-        "SNR": 5,
-        "Lam_Ref": 7000,
+        "SNR": 10,
+        "Lam_Ref": 5000,
         "OBJ_FIB_DISP": 0,
         "MOON": None,
         "PWV": 10,
         "FLI": 0,
-        "SEE": 1,
+        "SEE": 0.8,
         "AM": 1.,
         "SKYCALC": True,
         "Obj_SED": 'template',
         "SED_Name": 'Kinney_s0',
-        "OBJ_MAG": 16,
+        "OBJ_MAG": 12,
         "MAG_SYS": 'Vega',
         "MAG_FIL": 'V',
         "Z": 0,
         "BB_Temp": 9000.,
         "PL_Index": -2,
         "SEL_FLUX": 50e-16,
-        "SEL_CWAV": 7000,
+        "SEL_CWAV": 5000,
         "SEL_FWHM": 20,
-        "Obj_Spat_Dis": 'sb',
+        "Obj_Spat_Dis": 'ps',
         "IMA": 'sersic',
-        "Ext_Ell": 0.,
-        "IMA_FWHM": 0.8,
-        "IMA_BETA": 99,
-        "IMA_KFWHM": 5,
-        "Sersic_Reff": 0.5,
-        "Sersic_Ind": 0.5,
+        "Ext_Ell": None,
+        "IMA_FWHM": None,
+        "IMA_BETA": None,
+        "IMA_KFWHM": None,
+        "Sersic_Reff": 3.0,
+        "Sersic_Ind": 1.0,
         "IMA_KREFF": 5,
         "SPEC_RANGE": 'fixed',
-        "SPEC_KFWHM": 10,
-        "SPEC_HSIZE": 1000,
+        "SPEC_KFWHM": None,
+        "SPEC_HSIZE": 999999,
         "COADD_WL": 1,
         "IMA_RANGE": 'square_fixed',
         "COADD_XY": 1,
@@ -161,6 +158,7 @@ def index():
             # Store plot data
             plot_traces = []
             summary_table = []
+            has_errors = False
             
             for idx, config in enumerate(configs):
                 try:
@@ -191,9 +189,7 @@ def index():
                     computed_time = None
                     
                     # Compute based on mode
-                    # # # workaround for global edges
                     coadd_wl = config.get('COADD_WL', params.get('COADD_WL', 1))
-                    edges = int(coadd_wl * NCOADD) # # # just to handle edge effects better
                     
                     if compute_mode == 'dit_ndit':
                         # Compute SNR from DIT & NDIT
@@ -203,27 +199,19 @@ def index():
                         
                         if is_ifs:
                             res_result = obj.snr_from_source(con, im, spe)
-                            computed_snr = res_result
-                            wave_array = res_result['spec']['snr'].wave.coord()
-                            snr_array = res_result['spec']['snr'].data.data
-                            # Use SEL_CWAV as reference wavelength if Obj_SED is 'line', else Lam_Ref
-                            if config.get('Obj_SED', params.get('Obj_SED', 'template')) == 'line':
-                                ref_wave = config.get('SEL_CWAV', params.get('SEL_CWAV', 7000))
-                            else:
-                                ref_wave = 0.5 * (wave_array[-1] + wave_array[0])
-                            idx_closest = (np.abs(wave_array - ref_wave)).argmin()
-                            true_wave = wave_array[idx_closest]
-                            achieved_snr = snr_array[idx_closest]
-                            # Always print SNR per pixel
-                            debug_lines.append(f"  → Achieved SNR at central wavelength {true_wave:.1f} Å: {achieved_snr:.2f}")
-                            # Print SNR with spectral coadding if available
-                            if 'snr_rebin' in res_result['spec']:
-                                snr_array_rebin = res_result['spec']['snr_rebin'].data.data
-                                snr_array_rebin[0:edges] = snr_array_rebin[edges+1]
-                                snr_array_rebin[-edges:] = snr_array_rebin[-edges-1]
-                                debug_lines.append(f"  → Achieved SNR at central wavelength {true_wave:.1f} Å (\n with spectral coadding): {snr_array_rebin[idx_closest]:.2f}")
                         elif is_mos:
                             res_result = obj.snr_from_source_MOS(con, im, spe)
+                        
+                        # Check if result contains error message
+                        if 'message' in res_result:
+                            debug_lines.append(f"  ⚠ WARNING: {res_result['message']}")
+                            if 'frac_sat' in res_result:
+                                    if is_ifs:
+                                        debug_lines.append(f"  → Fraction of saturated voxels: {res_result['frac_sat']*100:.1f}%")
+                                    elif is_mos:
+                                        debug_lines.append(f"  → Fraction of saturated pixels: {res_result['frac_sat']*100:.1f}%")
+                            has_errors = True
+                        else:
                             computed_snr = res_result
                             wave_array = res_result['spec']['snr'].wave.coord()
                             snr_array = res_result['spec']['snr'].data.data
@@ -240,9 +228,13 @@ def index():
                             # Print SNR with spectral coadding if available
                             if 'snr_rebin' in res_result['spec']:
                                 snr_array_rebin = res_result['spec']['snr_rebin'].data.data
-                                snr_array_rebin[0:edges] = snr_array_rebin[edges+1]
-                                snr_array_rebin[-edges:] = snr_array_rebin[-edges-1]
-                                debug_lines.append(f"  → Achieved SNR at central wavelength {true_wave:.1f} Å (\n with spectral coadding): {snr_array_rebin[idx_closest]:.2f}")
+                                debug_lines.append(f"  → Achieved SNR at central wavelength {true_wave:.1f} Å (with spectral coadding): {snr_array_rebin[idx_closest]:.2f}")
+                            # Add saturation info
+                            if 'frac_sat' in res_result:
+                                    if is_ifs:
+                                        debug_lines.append(f"  → Fraction of saturated voxels: {res_result['frac_sat']*100:.1f}%")
+                                    elif is_mos:
+                                        debug_lines.append(f"  → Fraction of saturated pixels: {res_result['frac_sat']*100:.1f}%")
                             
                     elif compute_mode == 'dit_snr':
                         # Compute NDIT from DIT & SNR
@@ -252,58 +244,62 @@ def index():
                         
                         if is_ifs:
                             computed_time = obj.time_from_source(con, im, spe, dit=False)
-                            debug_lines.append(f"  → Required NDIT: {computed_time['ndit']:.2f}")
-                            # Update config with computed NDIT
-                            config['NDIT'] = int(np.ceil(computed_time['ndit']))
-                            con, ob, spe, im, spe_input = obj.build_obs_full(config)
-                            # Compute achieved SNR
-                            res_result = obj.snr_from_source(con, im, spe)
-                            computed_snr = res_result
-                            # Use SEL_CWAV as reference wavelength if Obj_SED is 'line', else Lam_Ref
-                            if config.get('Obj_SED', params.get('Obj_SED', 'template')) == 'line':
-                                ref_wave = config.get('SEL_CWAV', params.get('SEL_CWAV', 7000))
-                            else:
-                                ref_wave = config.get('Lam_Ref', params.get('Lam_Ref', 7000))
-                            wave_array = res_result['spec']['snr'].wave.coord()
-                            snr_array = res_result['spec']['snr'].data.data
-                            idx_closest = (np.abs(wave_array - ref_wave)).argmin()
-                            true_wave = wave_array[idx_closest]
-                            achieved_snr = snr_array[idx_closest]
-                            # Always print SNR per pixel
-                            debug_lines.append(f"  → Achieved SNR at wavelength {true_wave:.1f} Å (closest to requested reference wavelength {ref_wave} Å): {achieved_snr:.2f}")
-                            # Print SNR with spectral coadding if available
-                            if 'snr_rebin' in res_result['spec']:
-                                snr_array_rebin = res_result['spec']['snr_rebin'].data.data
-                                snr_array_rebin[0:edges] = snr_array_rebin[edges+1]
-                                snr_array_rebin[-edges:] = snr_array_rebin[-edges-1]
-                                debug_lines.append(f"  → Achieved SNR at wavelength {true_wave:.1f} Å (closest to requested reference wavelength {ref_wave} Å, \n with spectral coadding): {snr_array_rebin[idx_closest]:.2f}")
                         elif is_mos:
                             computed_time = obj.time_from_source_MOS(con, im, spe, dit=False)
+                        
+                        # Check if result contains error message
+                        if 'message' in computed_time:
+                            debug_lines.append(f"  ⚠ WARNING: {computed_time['message']}")
+                            if 'frac_sat' in computed_time:
+                                        if is_ifs:
+                                            debug_lines.append(f"  → Fraction of saturated voxels: {computed_time['frac_sat']*100:.1f}%")
+                                        elif is_mos:
+                                            debug_lines.append(f"  → Fraction of saturated pixels: {computed_time['frac_sat']*100:.1f}%")
+                            has_errors = True
+                        else:
                             debug_lines.append(f"  → Required NDIT: {computed_time['ndit']:.2f}")
+                            # Add saturation info
+                            if 'frac_sat' in computed_time:
+                                        if is_ifs:
+                                            debug_lines.append(f"  → Fraction of saturated voxels: {computed_time['frac_sat']*100:.1f}%")
+                                        elif is_mos:
+                                            debug_lines.append(f"  → Fraction of saturated pixels: {computed_time['frac_sat']*100:.1f}%")
                             # Update config with computed NDIT
                             config['NDIT'] = int(np.ceil(computed_time['ndit']))
                             con, ob, spe, im, spe_input = obj.build_obs_full(config)
                             # Compute achieved SNR
-                            res_result = obj.snr_from_source_MOS(con, im, spe)
-                            computed_snr = res_result
-                            # Use SEL_CWAV as reference wavelength if Obj_SED is 'line', else Lam_Ref
-                            if config.get('Obj_SED', params.get('Obj_SED', 'template')) == 'line':
-                                ref_wave = config.get('SEL_CWAV', params.get('SEL_CWAV', 7000))
+                            if is_ifs:
+                                res_result = obj.snr_from_source(con, im, spe)
+                            elif is_mos:
+                                res_result = obj.snr_from_source_MOS(con, im, spe)
+                            
+                            # Check again for error message
+                            if 'message' in res_result:
+                                debug_lines.append(f"  ⚠ WARNING: {res_result['message']}")
+                                if 'frac_sat' in res_result:
+                                        if is_ifs:
+                                            debug_lines.append(f"  → Fraction of saturated voxels: {res_result['frac_sat']*100:.1f}%")
+                                        elif is_mos:
+                                            debug_lines.append(f"  → Fraction of saturated pixels: {res_result['frac_sat']*100:.1f}%")
+                                has_errors = True
                             else:
-                                ref_wave = config.get('Lam_Ref', params.get('Lam_Ref', 7000))
-                            wave_array = res_result['spec']['snr'].wave.coord()
-                            snr_array = res_result['spec']['snr'].data.data
-                            idx_closest = (np.abs(wave_array - ref_wave)).argmin()
-                            true_wave = wave_array[idx_closest]
-                            achieved_snr = snr_array[idx_closest]
-                            # Always print SNR per pixel
-                            debug_lines.append(f"  → Achieved SNR at wavelength {true_wave:.1f} Å (closest to requested reference wavelength {ref_wave} Å): {achieved_snr:.2f}")
-                            # Print SNR with spectral coadding if available
-                            if 'snr_rebin' in res_result['spec']:
-                                snr_array_rebin = res_result['spec']['snr_rebin'].data.data
-                                snr_array_rebin[0:edges] = snr_array_rebin[edges+1]
-                                snr_array_rebin[-edges:] = snr_array_rebin[-edges-1]
-                                debug_lines.append(f"  → Achieved SNR at wavelength {true_wave:.1f} Å (closest to requested reference wavelength {ref_wave} Å, \n with spectral coadding): {snr_array_rebin[idx_closest]:.2f}")
+                                computed_snr = res_result
+                                # Use SEL_CWAV as reference wavelength if Obj_SED is 'line', else Lam_Ref
+                                if config.get('Obj_SED', params.get('Obj_SED', 'template')) == 'line':
+                                    ref_wave = config.get('SEL_CWAV', params.get('SEL_CWAV', 7000))
+                                else:
+                                    ref_wave = config.get('Lam_Ref', params.get('Lam_Ref', 7000))
+                                wave_array = res_result['spec']['snr'].wave.coord()
+                                snr_array = res_result['spec']['snr'].data.data
+                                idx_closest = (np.abs(wave_array - ref_wave)).argmin()
+                                true_wave = wave_array[idx_closest]
+                                achieved_snr = snr_array[idx_closest]
+                                # Always print SNR per pixel
+                                debug_lines.append(f"  → Achieved SNR at wavelength {true_wave:.1f} Å\n (closest to requested reference wavelength {ref_wave} Å): {achieved_snr:.2f}")
+                                # Print SNR with spectral coadding if available
+                                if 'snr_rebin' in res_result['spec']:
+                                    snr_array_rebin = res_result['spec']['snr_rebin'].data.data
+                                    debug_lines.append(f"  → Achieved SNR at wavelength {true_wave:.1f} Å\n (closest to requested reference wavelength {ref_wave} Å, with spectral coadding): {snr_array_rebin[idx_closest]:.2f}")
                     
                     elif compute_mode == 'ndit_snr':
                         # Compute DIT from NDIT & SNR
@@ -313,60 +309,65 @@ def index():
                         
                         if is_ifs:
                             computed_time = obj.time_from_source(con, im, spe, dit=True)
-                            debug_lines.append(f"  → Required DIT: {computed_time['dit']:.2f} s")
-                            # Update config with computed DIT
-                            config['DIT'] = computed_time['dit']
-                            con, ob, spe, im, spe_input = obj.build_obs_full(config)
-                            # Compute achieved SNR
-                            res_result = obj.snr_from_source(con, im, spe)
-                            computed_snr = res_result
-                            # Use SEL_CWAV as reference wavelength if Obj_SED is 'line', else Lam_Ref
-                            if config.get('Obj_SED', params.get('Obj_SED', 'template')) == 'line':
-                                ref_wave = config.get('SEL_CWAV', params.get('SEL_CWAV', 7000))
-                            else:
-                                ref_wave = config.get('Lam_Ref', params.get('Lam_Ref', 7000))
-                            wave_array = res_result['spec']['snr'].wave.coord()
-                            snr_array = res_result['spec']['snr'].data.data
-                            idx_closest = (np.abs(wave_array - ref_wave)).argmin()
-                            true_wave = wave_array[idx_closest]
-                            achieved_snr = snr_array[idx_closest]
-                            if 'snr_rebin' in res_result['spec']:
-                                snr_array_rebin = res_result['spec']['snr_rebin'].data.data
-                                snr_array_rebin[0:edges] = snr_array_rebin[edges+1]
-                                snr_array_rebin[-edges:] = snr_array_rebin[-edges-1]
-                                debug_lines.append(f"  → Achieved SNR at wavelength {true_wave:.1f} Å (closest to requested reference wavelength {ref_wave} Å, \n with spectral coadding): {snr_array_rebin[idx_closest]:.2f}")                            
-                            debug_lines.append(f"  → Achieved SNR at wavelength {true_wave:.1f} Å (closest to requested reference wavelength {ref_wave} Å): {achieved_snr:.2f}")
                         elif is_mos:
                             computed_time = obj.time_from_source_MOS(con, im, spe, dit=True)
+                        
+                        # Check if result contains error message
+                        if 'message' in computed_time:
+                            debug_lines.append(f"  ⚠ WARNING: {computed_time['message']}")
+                            if 'frac_sat' in computed_time:
+                                if is_ifs:
+                                    debug_lines.append(f"  → Fraction of saturated voxels: {computed_time['frac_sat']*100:.1f}%")
+                                elif is_mos:
+                                    debug_lines.append(f"  → Fraction of saturated pixels: {computed_time['frac_sat']*100:.1f}%")
+                            has_errors = True
+                        else:
                             debug_lines.append(f"  → Required DIT: {computed_time['dit']:.2f} s")
+                            # Add saturation info
+                            if 'frac_sat' in computed_time:
+                                if is_ifs:
+                                    debug_lines.append(f"  → Fraction of saturated voxels: {computed_time['frac_sat']*100:.1f}%")
+                                elif is_mos:
+                                    debug_lines.append(f"  → Fraction of saturated pixels: {computed_time['frac_sat']*100:.1f}%")
                             # Update config with computed DIT
                             config['DIT'] = computed_time['dit']
                             con, ob, spe, im, spe_input = obj.build_obs_full(config)
                             # Compute achieved SNR
-                            res_result = obj.snr_from_source_MOS(con, im, spe)
-                            computed_snr = res_result
-                            # Use SEL_CWAV as reference wavelength if Obj_SED is 'line', else Lam_Ref
-                            if config.get('Obj_SED', params.get('Obj_SED', 'template')) == 'line':
-                                ref_wave = config.get('SEL_CWAV', params.get('SEL_CWAV', 7000))
+                            if is_ifs:
+                                res_result = obj.snr_from_source(con, im, spe)
+                            elif is_mos:
+                                res_result = obj.snr_from_source_MOS(con, im, spe)
+                            
+                            # Check again for error message
+                            if 'message' in res_result:
+                                debug_lines.append(f"  ⚠ WARNING: {res_result['message']}")
+                                if 'frac_sat' in res_result:
+                                        if is_ifs:
+                                            debug_lines.append(f"  → Fraction of saturated voxels: {res_result['frac_sat']*100:.1f}%")
+                                        elif is_mos:
+                                            debug_lines.append(f"  → Fraction of saturated pixels: {res_result['frac_sat']*100:.1f}%")
+                                has_errors = True
                             else:
-                                ref_wave = config.get('Lam_Ref', params.get('Lam_Ref', 7000))
-                            wave_array = res_result['spec']['snr'].wave.coord()
-                            snr_array = res_result['spec']['snr'].data.data
-                            idx_closest = (np.abs(wave_array - ref_wave)).argmin()
-                            true_wave = wave_array[idx_closest]
-                            achieved_snr = snr_array[idx_closest]
-                            if 'snr_rebin' in res_result['spec']:
-                                snr_array_rebin = res_result['spec']['snr_rebin'].data.data
-                                snr_array_rebin[0:edges] = snr_array_rebin[edges+1]
-                                snr_array_rebin[-edges:] = snr_array_rebin[-edges-1]
-                                debug_lines.append(f"  → Achieved SNR at wavelength {true_wave:.1f} Å (closest to requested reference wavelength {ref_wave} Å, \n with spectral coadding): {snr_array_rebin[idx_closest]:.2f}") 
-                            debug_lines.append(f"  → Achieved SNR at wavelength {true_wave:.1f} Å (closest to requested reference wavelength {ref_wave} Å): {achieved_snr:.2f}")
+                                computed_snr = res_result
+                                # Use SEL_CWAV as reference wavelength if Obj_SED is 'line', else Lam_Ref
+                                if config.get('Obj_SED', params.get('Obj_SED', 'template')) == 'line':
+                                    ref_wave = config.get('SEL_CWAV', params.get('SEL_CWAV', 7000))
+                                else:
+                                    ref_wave = config.get('Lam_Ref', params.get('Lam_Ref', 7000))
+                                wave_array = res_result['spec']['snr'].wave.coord()
+                                snr_array = res_result['spec']['snr'].data.data
+                                idx_closest = (np.abs(wave_array - ref_wave)).argmin()
+                                true_wave = wave_array[idx_closest]
+                                achieved_snr = snr_array[idx_closest]
+                                if 'snr_rebin' in res_result['spec']:
+                                    snr_array_rebin = res_result['spec']['snr_rebin'].data.data
+                                    debug_lines.append(f"  → Achieved SNR at wavelength {true_wave:.1f} Å\n (closest to requested reference wavelength {ref_wave} Å, with spectral coadding): {snr_array_rebin[idx_closest]:.2f}")                            
+                                debug_lines.append(f"  → Achieved SNR at wavelength {true_wave:.1f} Å\n (closest to requested reference wavelength {ref_wave} Å): {achieved_snr:.2f}")
                     
-                    # Extract plot data
-                    if computed_snr is not None:
+                    # Extract plot data only if no error
+                    if computed_snr is not None and 'spec' in computed_snr:
                         wave = computed_snr['spec']['snr'].wave.coord()
                         snr_data = computed_snr['spec']['snr'].data.data
-                        # Label main plot as 'SNR x spectral pixel'
                         wave_list = wave.tolist() if hasattr(wave, 'tolist') else list(wave)
                         snr_list = snr_data.tolist() if hasattr(snr_data, 'tolist') else list(snr_data)
                         plot_traces.append({
@@ -375,14 +376,10 @@ def index():
                             'name': f"{inst.upper()} {chan.upper()} (SNR x spectral pixel)",
                             'color': COLORS.get(config_key, '#000000')
                         })
-                        # If spectral coadding > 1, add second plot with snr_rebin for both IFS and MOS if available
                         coadd_wl = config.get('COADD_WL', params.get('COADD_WL', 1))
                         if coadd_wl > 1 and 'snr_rebin' in computed_snr['spec']:
-                            edges = int(coadd_wl * NCOADD) # # # just to handle edge effects better
                             wave_rebin = computed_snr['spec']['snr_rebin'].wave.coord()
                             snr_rebin = computed_snr['spec']['snr_rebin'].data.data
-                            snr_rebin[0:edges] = snr_rebin[edges+1]
-                            snr_rebin[-edges:] = snr_rebin[-edges-1]
                             wave_rebin_list = wave_rebin.tolist() if hasattr(wave_rebin, 'tolist') else list(wave_rebin)
                             snr_rebin_list = snr_rebin.tolist() if hasattr(snr_rebin, 'tolist') else list(snr_rebin)
                             plot_traces.append({
@@ -393,13 +390,23 @@ def index():
                                 'secondary': True
                             })
                         
+                        # Get frac_sat from the appropriate source
+                        frac_sat_val = None
+                        if 'frac_sat' in computed_snr:
+                            frac_sat_val = computed_snr['frac_sat']
+                        elif computed_time and 'frac_sat' in computed_time:
+                            frac_sat_val = computed_time['frac_sat']
+                        elif res_result and 'frac_sat' in res_result:
+                            frac_sat_val = res_result['frac_sat']
+                        
                         # Add to summary table
                         summary_row = {
                             'config': f"{inst.upper()} {chan.upper()}",
                             'dit': config['DIT'],
                             'ndit': config['NDIT'],
                             'snr_target': config.get('SNR', '-'),
-                            'snr_achieved': f"{snr_data[len(snr_data)//2]:.2f}"
+                            'snr_achieved': f"{snr_data[len(snr_data)//2]:.2f}",
+                            'frac_sat': f"{frac_sat_val*100:.1f}%" if frac_sat_val is not None else '-'
                         }
                         summary_table.append(summary_row)
                     
@@ -409,14 +416,18 @@ def index():
                     debug_lines.append(f"  ERROR: {str(e)}")
                     debug_lines.append(f"  Traceback: {traceback.format_exc()}")
                     debug_lines.append("")
+                    has_errors = True
             
             debug_lines.append("=" * 80)
-            debug_lines.append("Computation completed")
+            if has_errors:
+                debug_lines.append("Computation completed with warnings/errors (see above)")
+            else:
+                debug_lines.append("Computation completed successfully")
             debug_lines.append("=" * 80)
             
             debug_output = '\n'.join(debug_lines)
             
-            # Prepare plot data for frontend
+            # Prepare plot data for frontend only if we have valid traces
             if plot_traces:
                 plot_data = {
                     'traces': plot_traces,

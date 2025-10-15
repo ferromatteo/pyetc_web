@@ -30,7 +30,7 @@ Code of the main WST ETC package (https://github.com/ferromatteo/pyetc_wst)
 
 ## Requirements
 
-- Python 3 installed on your system.
+- pyetc_wst installed on your system and in the correct PYTHONPATH.
 
 ## Notes
 
